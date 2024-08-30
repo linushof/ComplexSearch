@@ -1,0 +1,16 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+
+*.pdf
+*.pptx
+*.docx
+*.xlsx
+
+housekeeping/
+talks/
+manuscript/
+preregistration/
+experiment/
