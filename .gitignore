@@ -8,6 +8,7 @@
 *.pptx
 *.docx
 *.xlsx
+*.csv
 
 housekeeping/
 talks/
