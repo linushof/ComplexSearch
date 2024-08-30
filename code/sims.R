@@ -1,4 +1,4 @@
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse, brms)
 
 # Factorial design -----------------------------------------------------
 
@@ -48,6 +48,7 @@ dat %>%
 
 # Hypothesis Set 1: Effects on switching
 
+set.seed(123134)
 dat <- dat %>% mutate(
   
   
@@ -60,66 +61,70 @@ dat <- dat %>% mutate(
     if_else(complexity == "SR", 1.2, if_else(complexity == "RR2", 1.5, 1.8)) + 
     
     # unobserved influences
-    rnorm(N_p, 0, 1)
-  )
+    rnorm(N_p, 0, .5)
+    
+    )
 )
 
 # Hypothesis Set 2: Effects on accuracy
 
 
-
+set.seed(343891)
 dat <- dat %>% mutate(
   
   accuracy = logistic( 0 + 
   
-    # 2.1 Accuracy increases with decreasing complexity
-    if_else(complexity == "SR", 1.5, if_else(complexity == "RR2", 1, .5)) + 
+    # 2.1 Accuracy decreases with increasing complexity
+    if_else(complexity == "SR", 1.5, if_else(complexity == "RR2", 1, .5)) - 
     
     # 2.2 Higher switching frequency leads to higher (lower) accuracy given the decision criterion is FW (EV)
-    ifelse(criterion == "FW", switch,(1-switch)) - 
+    if_else(criterion == "FW", (1-switch) , switch) * 
     
-    # 2.3 Higher (low) switching frequency is punishes EV (FW) more in complex problems
-    1 * ifelse(criterion == "FW", (1-switch), switch) * if_else(complexity == "SR", 1.1, if_else(complexity == "RR2", 1.3, 1.5)) + 
+    # 2.3 Higher (low) switching frequency punishes EV (FW) more in complex problems
+    if_else(complexity == "SR", 1, if_else(complexity == "RR2", 2, 3)) +
   
     # unobserved influences
-    rnorm(N_p, 0, 1) , 
+    rnorm(N_p, 0, .5)
     
-    phi=.5)
+    )
   )
 
+set.seed(8897)
 dat <- dat %>% mutate(
   
   choice = rbinom(nrow(dat),1,accuracy)
   
 )
 
-View(dat)
+dat <- dat %>% mutate(id=as.factor(id), 
+                      criterion = as.factor(criterion), 
+                      complexity = as.factor(complexity))
+
 # Simulation checks ----------------------------------------------------------------
 
 # 1.1: Higher switching frequency for FW vs. EV
 dat %>% 
   ggplot(aes(x=criterion, y=switch)) + 
   geom_boxplot() + 
-  scale_y_continuous(limits = c(0,1)) 
-
-
-dat %>% 
-  ggplot(aes(x=switch, fill=criterion)) + 
-  geom_density(alpha = .5)
+  scale_y_continuous(limits = c(0,1)) + 
+  theme_minimal()
 
 # 1.2: Effect of FW vs. EV increases with complexity
 dat %>% 
   ggplot(aes(x=criterion, y=switch, fill = factor(complexity, levels = c("SR", "RR2", "RR3")))) + 
   geom_boxplot() + 
   scale_y_continuous(limits = c(0,1)) + 
-  labs(fill = "Complexity")
+  labs(fill = "Complexity") +
+  theme_minimal()
 
 
 # 2.1 Accuracy increases with decreasing complexity
 dat %>% 
   ggplot(aes(x=factor(complexity, levels = c("SR", "RR2", "RR3")), y=accuracy)) + 
   geom_boxplot() + 
-  scale_y_continuous(limits = c(0,1)) 
+  scale_y_continuous(limits = c(0,1)) + 
+  labs(x = "Complexity") + 
+  theme_minimal()
 
 
 # 2.2 Higher switching frequency leads to higher (lower) accuracy given the decision criterion is FW (EV)
@@ -127,18 +132,92 @@ dat %>%
   ggplot(aes(x=switch, y=accuracy, color = criterion)) + 
   geom_point() + 
   geom_smooth(method = "lm") + 
-  scale_y_continuous(limits = c(0,1))
+  scale_y_continuous(limits = c(0,1)) + 
+  theme_minimal()
 
 # 2.3 Higher (low) switching frequency punishes EV (FW) more in complex problems
 
 dat %>% 
   ggplot(aes(x=switch, y=accuracy, color = criterion, linetype = factor(complexity, levels = c("SR", "RR2", "RR3")))) + 
   geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) + 
+  geom_smooth(method = "lm", se = FALSE, color = "black") + 
   facet_wrap(~criterion) + 
   scale_y_continuous(limits = c(0,1)) + 
-  labs(linetype = "Complexity")
+  labs(linetype = "Complexity") + 
+  theme_minimal()
 
 # Statistical Models ------------------------------------------------------------------
 
+# 1.1: Higher switching frequency for FW vs. EV
 
+m1.1 <- brm(switch ~ criterion + (1|id) ,
+            data = dat , 
+            family = Beta(link = "logit") , 
+            chains = 4 , 
+            iter = 2000 ,
+            cores = 4
+            )
+summary(m1.1)
+
+# 1.2: Effect of FW vs. EV increases with complexity
+
+m1.2 <- brm(switch ~ criterion:complexity + (1|id) ,
+            data = dat ,
+            family = Beta(link = "logit") ,
+            iter = 2000 , 
+            chains = 4 , 
+            cores = 4
+            )
+summary(m1.2.1)
+
+
+
+# 2.1 Accuracy increases with decreasing complexity
+
+m2.1 <- brm(choice ~ complexity + (1|id) ,
+            data = dat , 
+            family = bernoulli(link = "logit") , 
+            iter = 2000 , 
+            chains = 4 , 
+            cores = 4
+)
+summary(m2.1)
+
+# 2.2 Higher switching frequency leads to higher (lower) accuracy given the decision criterion is FW (EV)
+
+
+m2.2 <- brm(choice ~ switch:criterion + (1|id) ,
+              data = dat , 
+              family = bernoulli(link = "logit") , 
+              iter = 2000 , 
+              chains = 4 , 
+              cores = 4
+)
+summary(m2.2.1)
+
+
+
+# 2.3 Higher (low) switching frequency punishes EV (FW) more in complex problems
+
+dat_fw <- dat %>% filter(criterion == "FW")
+dat_ev <- dat %>% filter(criterion == "EV")
+
+
+m2.3.1 <- brm(choice ~ switch:complexity + (1|id) ,
+            data = dat_fw , 
+            family = bernoulli(link = "logit") , 
+            iter = 4000 , 
+            chains = 4 , 
+            cores = 4
+)
+summary(m2.3.1)
+
+
+m2.3.2 <- brm(choice ~ switch:complexity + (1|id) ,
+              data = dat_ev , 
+              family = bernoulli(link = "logit") , 
+              iter = 4000 , 
+              chains = 4 , 
+              cores = 4
+)
+summary(m2.3.2)
