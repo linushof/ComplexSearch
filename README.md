@@ -2,9 +2,7 @@
 
 <a href="https://osf.io/fv6yn">
   <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Preregistered_large_color_%28vector%29.svg" alt="Preregistered" width="50" />
-</a>
-
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+</a>   [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 
 In decisions from experience, people draw sequential samples from options to learn about their latent payoff distributions (ecological search). 
 However, the samples do not give people direct access to the distributions’ properties, but they need to actively process the samples to form a cognitive representation of the payoff distributions (cognitive search). 
