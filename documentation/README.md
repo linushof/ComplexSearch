@@ -1,5 +1,5 @@
 # Preregistrations
 
-- *Study 1*: open
-- *Study 2*: [https://doi.org/10.17605/OSF.IO/FV6YN](https://doi.org/10.17605/OSF.IO/FV6YN)
+- *Study 1*: [https://osf.io/vk9r4](https://osf.io/vk9r4)
+- *Study 2*: [https://osf.io/fv6yn](https://osf.io/fv6yn)
 - *Study 3*: open
